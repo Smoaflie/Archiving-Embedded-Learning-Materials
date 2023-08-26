@@ -57,4 +57,3 @@ void PS_ReadIndexTable(u8 PageID);//读索引表（保留）
 /* 接收应答包 */
 void AS608_JudgeData(u8 *ucstr);/* 分析接收到的应答包 */
 #endif	/* __AS608_H */
-

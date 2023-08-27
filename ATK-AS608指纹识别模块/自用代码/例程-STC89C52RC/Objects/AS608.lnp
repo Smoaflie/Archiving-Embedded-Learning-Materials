@@ -1,0 +1,6 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\AS608.obj",
+".\Objects\UART.obj" 
+TO ".\Objects\AS608" 
+PRINT(".\Listings\AS608.m51")

@@ -1,0 +1,1 @@
+"Users\oled.c" OPTIMIZE (8,SPEED) BROWSE INCDIR(.\Users) DEBUG OBJECTEXTEND PRINT(.\Listings\oled.lst) TABS (2) OBJECT(.\Objects\oled.obj)

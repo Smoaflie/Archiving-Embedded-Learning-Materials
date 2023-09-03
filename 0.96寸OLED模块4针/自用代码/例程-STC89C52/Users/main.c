@@ -1,35 +1,45 @@
 /********************************************************************************
-  * ÎÄ ¼ş Ãû: main.c
-  * °æ ±¾ ºÅ: ³õ°æ
-  * ĞŞ¸Ä×÷Õß: Smoaflie
-  * ĞŞ¸ÄÈÕÆÚ: 2023Äê08ÔÂ27ÈÕ
-  * ¹¦ÄÜ½éÉÜ:          
+  * æ–‡ ä»¶ å: main.c
+  * ç‰ˆ æœ¬ å·: åˆç‰ˆ
+  * ä¿®æ”¹ä½œè€…: Smoaflie
+  * ä¿®æ”¹æ—¥æœŸ: 2023å¹´08æœˆ27æ—¥
+  * åŠŸèƒ½ä»‹ç»:          
   ******************************************************************************
-  * ×¢ÒâÊÂÏî:
+  * æ³¨æ„äº‹é¡¹:
 *********************************************************************************/
 
 #include <REG52.h>
 #include "oled.h"
 #include "bmp.h"
 
+static void delay_ms(unsigned int ms)
+{                         
+	unsigned int a;
+	while(ms)
+	{
+		a=1800;
+		while(a--);
+		ms--;
+	}
+	return;
+}
+
 int main(void)
 {
 	u8 t=' ';
-	OLED_Init();//³õÊ¼»¯OLED
-	OLED_ColorTurn(1);//0Õı³£ÏÔÊ¾£¬1 ·´É«ÏÔÊ¾
-  OLED_DisplayTurn(1);//0Õı³£ÏÔÊ¾ 1 ÆÁÄ»·­×ªÏÔÊ¾
+	OLED_Init();//åˆå§‹åŒ–OLED
+	OLED_ColorTurn(1);//0æ­£å¸¸æ˜¾ç¤ºï¼Œ1 åè‰²æ˜¾ç¤º
+  OLED_DisplayTurn(1);//0æ­£å¸¸æ˜¾ç¤º 1 å±å¹•ç¿»è½¬æ˜¾ç¤º
 	while(1) 
 	{		
-		OLED_DrawBMP(0,0,128,64,BMP1);
-		delay_ms(500);
 		OLED_Clear();
-		OLED_ShowChinese(0,0,0,16);//¿É
-		OLED_ShowChinese(18,0,1,16);//×Ô
-		OLED_ShowChinese(36,0,2,16);//¶¨
-		OLED_ShowChinese(54,0,3,16);//Òå
-		OLED_ShowChinese(72,0,4,16);//µÄ
-		OLED_ShowChinese(90,0,5,16);//ÄÚ
-		OLED_ShowChinese(108,0,6,16);//Èİ
+		OLED_ShowChinese(0,0,0,16);//å¯
+		OLED_ShowChinese(18,0,1,16);//è‡ª
+		OLED_ShowChinese(36,0,2,16);//å®š
+		OLED_ShowChinese(54,0,3,16);//ä¹‰
+		OLED_ShowChinese(72,0,4,16);//çš„
+		OLED_ShowChinese(90,0,5,16);//å†…
+		OLED_ShowChinese(108,0,6,16);//å®¹
 		OLED_ShowString(8,2,"Smoaflie",16);
 		OLED_ShowString(20,4,"2023/08/027",16);
 		OLED_ShowString(0,6,"ASCII:",16);  

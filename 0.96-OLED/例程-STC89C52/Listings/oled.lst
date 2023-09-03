@@ -1,0 +1,446 @@
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE OLED
+OBJECT MODULE PLACED IN .\Objects\oled.obj
+COMPILER INVOKED BY: D:\Program Files\Keil_v5_C51\C51\BIN\C51.EXE Users\oled.c OPTIMIZE(8,SPEED) BROWSE INCDIR(.\Users) 
+                    -DEBUG OBJECTEXTEND PRINT(.\Listings\oled.lst) TABS(2) OBJECT(.\Objects\oled.obj)
+
+line level    source
+
+   1          #include "oled.h"
+   2          #include "oledfont.h"
+   3          
+   4          //OLED的显存
+   5          //存放格式如下.
+   6          //[0]0 1 2 3 ... 127  
+   7          //[1]0 1 2 3 ... 127  
+   8          //[2]0 1 2 3 ... 127  
+   9          //[3]0 1 2 3 ... 127  
+  10          //[4]0 1 2 3 ... 127  
+  11          //[5]0 1 2 3 ... 127  
+  12          //[6]0 1 2 3 ... 127  
+  13          //[7]0 1 2 3 ... 127
+  14          
+  15          /************************************************
+  16          函数名称  :   delay_ms
+  17          功    能  :   延时xms
+  18          参    数  :   x
+  19          返 回 值   :   无
+  20          *************************************************/
+  21          static void delay_ms(unsigned int ms)
+  22          {                         
+  23   1        unsigned int a;
+  24   1        while(ms)
+  25   1        {
+  26   2          a=1800;
+  27   2          while(a--);
+  28   2          ms--;
+  29   2        }
+  30   1        return;
+  31   1      }
+  32          
+  33          /************************************************
+  34          函数名称  :   OLED_WR_Byte
+  35          功    能  :   IIC发送一个字节的命令/数据（包含起止信号）
+  36          参   数 :   dat:数据
+  37          参      数  :     mode:数据/命令标志
+  38            取 值 :   OLED_CMD,表示命令;
+  39                    OLED_DATA,表示数据;
+  40          返 回 值   :   无
+  41          *************************************************/
+  42          static void OLED_WR_Byte(u8 dat,u8 mode)
+  43          {
+  44   1        IIC_Start();
+  45   1        IIC_Send_Byte(0x78);  //OLED模块的地址+写模式
+  46   1        IIC_WaitAck();
+  47   1        if(mode){IIC_Send_Byte(0x40);}  //告知从机接下来发送的是数据字节
+  48   1         else{IIC_Send_Byte(0x00);} //告知从机接下来发送的是命令字节
+  49   1        IIC_WaitAck();
+  50   1        IIC_Send_Byte(dat);
+  51   1        IIC_WaitAck();
+  52   1        IIC_Stop();
+  53   1      }
+  54          
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 2   
+
+  55          /************************************************
+  56          函数名称  :   OLED_Init
+  57          功    能  :   初始化屏幕
+  58          参    数  :   无
+  59          返 回 值   :   无
+  60          *************************************************/      
+  61          void OLED_Init(void)
+  62          { 
+  63   1        OLED_WR_Byte(0xAE,OLED_CMD);/* 关闭OLED屏幕 */
+  64   1        /* 自行配制相应的功能 */
+  65   1        /* 不配置则按默认值初始化 */
+  66   1        OLED_WR_Byte(0xAF,OLED_CMD); //开启OLED屏幕
+  67   1      }
+  68          
+  69          /************************************************
+  70          函数名称  :   OLED_Set_Display_Start_Line
+  71          功    能  :   设置显示起始行 Set Display Start Line
+  72          参    数  :   i：起始行(0~63)(reset:0)
+  73          返 回 值   :   无
+  74          *************************************************/   
+  75          void OLED_Set_Display_Start_Line(u8 i)
+  76          {
+  77   1        OLED_WR_Byte(i|0x40,OLED_CMD);
+  78   1      }
+  79          /************************************************
+  80          函数名称  :   OLED_Set_Contrast_Control
+  81          功    能  :   配置对比度 Set Contrast Control
+  82                          复为值为7Fh
+  83          参    数  :   val：对比度值(0~255)
+  84          返 回 值   :   无
+  85          *************************************************/      
+  86          void OLED_Set_Contrast_Control(u8 val)
+  87          {
+  88   1          OLED_WR_Byte(0x81,OLED_CMD);//控制字节
+  89   1        OLED_WR_Byte(val,OLED_CMD);//设置对比度数值（0~255)
+  90   1      }
+  91          
+  92          /************************************************
+  93          函数名称  :   OLED_Set_Memory_Addressing_Mode
+  94          功    能  :   设置寻址模式 Set Memory Addressing Mode
+  95                          复位默认为页面寻址模式
+  96          参    数  :   mode:
+  97                          0:水平寻址;1:垂直寻址;2:页面寻址
+  98          返 回 值   :   无
+  99          *************************************************/
+ 100          void OLED_Set_Memory_Addressing_Mode(u8 mode)
+ 101          {
+ 102   1          OLED_WR_Byte(0x20,OLED_CMD);//控制字节
+ 103   1        OLED_WR_Byte(mode,OLED_CMD);//设置寻址模式
+ 104   1      }
+ 105          
+ 106          /************************************************
+ 107          函数名称  :   OLED_Set_Multiplex_Ratio
+ 108          功    能  :   设置多路复用比 Set Multiplex Ratio
+ 109                          复位默认为63
+ 110          参    数  :   i:(15~63)
+ 111          返 回 值   :   无
+ 112          *************************************************/
+ 113          void OLED_Set_Multiplex_Ratio(u8 i)
+ 114          {
+ 115   1          OLED_WR_Byte(0xA8,OLED_CMD);//控制字节
+ 116   1        OLED_WR_Byte(i,OLED_CMD);//设置多路复用比
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 3   
+
+ 117   1      }
+ 118          
+ 119          /************************************************
+ 120          函数名称  :   OLED_Set_Frequency
+ 121          功    能  :   设置显示时钟分频比/振荡器频率 Set Display Clock Divide Ratio/Oscillator Frequ
+             -ency
+ 122                          复位默认为1
+ 123          参    数  :   ratio:显示时钟的分频比-1(0~15)
+ 124                          freq:振荡器频率(0~15)
+ 125          返 回 值   :   无
+ 126          *************************************************/
+ 127          void OLED_Set_Frequency(u8 ratio,u8 freq)
+ 128          {
+ 129   1          OLED_WR_Byte(0xd5,OLED_CMD);//控制字节
+ 130   1        OLED_WR_Byte((freq<<4)+ratio,OLED_CMD);
+ 131   1      }
+ 132          
+ 133          /************************************************
+ 134          函数名称  :   OLED_Set_PreCharge_Period
+ 135          功    能  :   设置预充电周期 Set Pre-charge Period
+ 136          参    数  :   x:上升阶段的周期(0~15) 复位值为2
+ 137                          y:下降阶段的周期(0~15) 复位值为2
+ 138          返 回 值   :   无
+ 139          *************************************************/
+ 140          void OLED_Set_PreCharge_Period(u8 x,u8 y)
+ 141          {
+ 142   1          OLED_WR_Byte(0xD9,OLED_CMD);//控制字节
+ 143   1        OLED_WR_Byte((y<<4)+x,OLED_CMD);//设置
+ 144   1      }
+ 145          
+ 146          /************************************************
+ 147          函数名称  :   OLED_COM_Config
+ 148          功    能  :   设置COM引脚硬件配置 Set COM Pins Hardware Configuration
+ 149          参    数  :   x:0:顺序COM引脚配置;1:备选COM引脚配置 复位值为1
+ 150                          y:0/1:禁用/启用 COM左/右重映射 复位值为0
+ 151          返 回 值   :   无
+ 152          *************************************************/
+ 153          void OLED_COM_Config(u8 x,u8 y)
+ 154          {
+ 155   1          OLED_WR_Byte(0xDA,OLED_CMD);//控制字节
+ 156   1        OLED_WR_Byte((x<<4)+(y<<5),OLED_CMD);
+ 157   1      }
+ 158          
+ 159          /************************************************
+ 160          函数名称  :   OLED_Set_Display_Offset
+ 161          功    能  :   设置显示偏移量 Set Display Offset
+ 162          参    数  :   i:垂直偏移量(0~63) (RESET:00)
+ 163          返 回 值   :   无
+ 164          *************************************************/
+ 165          void OLED_Set_Display_Offset(u8 i)
+ 166          {
+ 167   1          OLED_WR_Byte(0xD3,OLED_CMD);//控制字节
+ 168   1        OLED_WR_Byte(i,OLED_CMD);//设置垂直偏移量(0~63)
+ 169   1      }
+ 170          /************************************************
+ 171          函数名称  :   OLED_VCOMH_Deselect_Level
+ 172          功    能  :   设置VCOMH取消选择电平 Set VCOMH Deselect Level
+ 173          参    数  :   i:0:~0.65*VCC;1:~0.77*VCC(RESET);2:0.83*VCC
+ 174          返 回 值   :   无
+ 175          *************************************************/
+ 176          void OLED_VCOMH_Deselect_Level(u8 i)
+ 177          {
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 4   
+
+ 178   1          if(i==0)
+ 179   1          {
+ 180   2              OLED_WR_Byte(0xDB,OLED_CMD);//控制字节
+ 181   2            OLED_WR_Byte(0x00,OLED_CMD);//~ 0.65 x VCC
+ 182   2          }
+ 183   1          else if(i==1)
+ 184   1          {
+ 185   2              OLED_WR_Byte(0xDB,OLED_CMD);//控制字节
+ 186   2            OLED_WR_Byte(0x20,OLED_CMD);//~ 0.77 x VCC
+ 187   2          }
+ 188   1          else if(i==2)
+ 189   1          {
+ 190   2              OLED_WR_Byte(0xDB,OLED_CMD);//控制字节
+ 191   2            OLED_WR_Byte(0x30,OLED_CMD);//~ 0.83 x VCC
+ 192   2          }
+ 193   1      }
+ 194          
+ 195          /************************************************
+ 196          函数名称  :   OLED_ColorTurn
+ 197          功    能  :   设置屏幕反相 Set Normal/Inverse Display
+ 198                  复位值为关闭
+ 199          参    数  :   0:关闭;1:开启
+ 200          返 回 值   :   无
+ 201          *************************************************/
+ 202          void OLED_ColorTurn(u8 i)
+ 203          {
+ 204   1        OLED_WR_Byte(0xA6+i,OLED_CMD);//正常显示
+ 205   1      }
+ 206          
+ 207          /************************************************
+ 208          函数名称  :   OLED_DisplayTurn
+ 209          功    能  :   屏幕翻转
+ 210                  Set COM Output Scan Direction & 
+ 211                  Set Segment Re-map
+ 212                  复位值为正常显示
+ 213          参    数  :   i:0:正常显示;1:翻转180°
+ 214                    2:仅水平翻转；3:仅垂直翻转
+ 215          返 回 值   :   无
+ 216          *************************************************/
+ 217          void OLED_DisplayTurn(u8 i)
+ 218          {
+ 219   1        if(i==0)
+ 220   1        {
+ 221   2          OLED_WR_Byte(0xC0,OLED_CMD);
+ 222   2          OLED_WR_Byte(0xA0,OLED_CMD);
+ 223   2        }
+ 224   1        else if(i==1)
+ 225   1        {
+ 226   2          OLED_WR_Byte(0xC8,OLED_CMD);
+ 227   2          OLED_WR_Byte(0xA1,OLED_CMD);
+ 228   2        }
+ 229   1        else if(i==2)
+ 230   1        {
+ 231   2          OLED_WR_Byte(0xC0,OLED_CMD);
+ 232   2          OLED_WR_Byte(0xA1,OLED_CMD);
+ 233   2        }
+ 234   1        else if(i==3)
+ 235   1        {
+ 236   2          OLED_WR_Byte(0xC8,OLED_CMD);
+ 237   2          OLED_WR_Byte(0xA0,OLED_CMD);
+ 238   2        }
+ 239   1      }
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 5   
+
+ 240          
+ 241          /************************************************
+ 242          函数名称  :   OLED_Set_Pos
+ 243          功    能  :   设置坐标  Set Column Start Address for Page Addressing Mode
+ 244          参    数  :   x,y
+ 245          返 回 值   :   无
+ 246          *************************************************/
+ 247          void OLED_Set_Pos(u8 x, u8 y) 
+ 248          { 
+ 249   1        OLED_WR_Byte(0xb0+y,OLED_CMD);
+ 250   1        OLED_WR_Byte(((x&0xf0)>>4)|0x10,OLED_CMD);
+ 251   1        OLED_WR_Byte((x&0x0f),OLED_CMD);
+ 252   1      }       
+ 253          
+ 254          /************************************************
+ 255          函数名称  :   OLED_Display_On
+ 256          功    能  :   开启OLED显示
+ 257          参    数  :   无
+ 258          返 回 值   :   无
+ 259          *************************************************/
+ 260          void OLED_Display_On(void)
+ 261          {
+ 262   1        OLED_WR_Byte(0XAF,OLED_CMD);  //DISPLAY ON
+ 263   1      }
+ 264          
+ 265          /************************************************
+ 266          函数名称  :   OLED_Display_Off
+ 267          功    能  :   关闭OLED显示     
+ 268          参    数  :   无
+ 269          返 回 值   :   无
+ 270          *************************************************/
+ 271          void OLED_Display_Off(void)
+ 272          {
+ 273   1        OLED_WR_Byte(0XAE,OLED_CMD);  //DISPLAY OFF
+ 274   1      }            
+ 275          
+ 276          /************************************************
+ 277          函数名称  :   OLED_Clear
+ 278          功    能  :   清屏函数,清完屏,整个屏幕是黑色的,和没点亮一样
+ 279          参    数  :   无
+ 280          返 回 值   :   无
+ 281          *************************************************/
+ 282          void OLED_Clear(void)  
+ 283          {  
+ 284   1        u8 i,n;       
+ 285   1        for(i=0;i<8;i++)  
+ 286   1        {  
+ 287   2          OLED_Set_Pos(0,i);  //每页的第一列开始
+ 288   2          for(n=0;n<128;n++)OLED_WR_Byte(0,OLED_DATA);//填充0 
+ 289   2        }
+ 290   1      }
+ 291          
+ 292          /************************************************
+ 293          函数名称  :   OLED_ShowChar
+ 294          功    能  :   在指定位置显示一个字符,包括部分字符
+ 295          参    数  :   x:0~127 ; y:0~63  坐标
+ 296          参   数 :   chr:字符
+ 297          参   数 :   font:字体
+ 298              取 值 :   8:6x8  16:8x16
+ 299          返 回 值   :   无
+ 300          *************************************************/
+ 301          void OLED_ShowChar(u8 x,u8 y,u8 chr,u8 font)
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 6   
+
+ 302          {       
+ 303   1        u8 sizex,sizey;
+ 304   1        u8 i;
+ 305   1        if(font==8){sizex=6;sizey=8;}
+ 306   1        else if(font==16){sizex=8;sizey=16;}
+ 307   1        chr-=' ';//得到偏移后的值
+ 308   1        OLED_Set_Pos(x,y);
+ 309   1        for(i=0;i<sizex*(sizey>>3);i++)
+ 310   1        {
+ 311   2          if(i%sizex==0&&sizey!=8) OLED_Set_Pos(x,y++);
+ 312   2          if(sizey==8) OLED_WR_Byte(font_0608[chr][i],OLED_DATA);//6X8字号
+ 313   2          else if(sizey==16) OLED_WR_Byte(font_0816[chr][i],OLED_DATA);//8x16字号
+ 314   2        }
+ 315   1      }
+ 316          
+ 317          /************************************************
+ 318          函数名称  :   OLED_ShowNum
+ 319          功    能  :   显示数字
+ 320          参    数  :   x,y :起点坐标
+ 321                        num:要显示的数字
+ 322                        len :数字的位数
+ 323                        font:字体 8:6*8,16:8*16     
+ 324          返 回 值   :   无
+ 325          *************************************************/
+ 326          void OLED_ShowNum(u8 x,u8 y,u32 num,u8 len,u8 font)
+ 327          {           
+ 328   1        u8 sizex,sizey;
+ 329   1        u8 i;
+ 330   1        if(font==8){sizex=6;sizey=8;}
+ 331   1        else if(font==16){sizex=8;sizey=16;}
+ 332   1        for(i=0;i<len;i++)
+ 333   1        {
+ 334   2          OLED_ShowChar(x,y,(num%10)+'0',font);
+ 335   2          x+=sizex;
+ 336   2          num/=10;
+ 337   2        }
+ 338   1      }
+ 339          
+ 340          /************************************************
+ 341          函数名称  :   OLED_ShowString
+ 342          功    能  :   显示字符串
+ 343          参    数  :   x,y :起点坐标
+ 344                  chr:要显示的字符串
+ 345                  font:字体 8:6*8,16:8*16   
+ 346          返 回 值   :   无
+ 347          *************************************************/
+ 348          void OLED_ShowString(u8 x,u8 y,u8 *chr,u8 font)
+ 349          {
+ 350   1        u8 sizex,sizey;
+ 351   1        if(font==8){sizex=6;sizey=8;}
+ 352   1        else if(font==16){sizex=8;sizey=16;}
+ 353   1        while (*chr)
+ 354   1        {   
+ 355   2          OLED_ShowChar(x,y,*chr++,sizey);
+ 356   2          x+=sizex;
+ 357   2        }
+ 358   1      }
+ 359          
+ 360          /************************************************
+ 361          函数名称  :   OLED_ShowChinese
+ 362          功    能  :   显示汉字
+ 363          参    数  :   x,y :起点坐标
+C51 COMPILER V9.54   OLED                                                                  09/02/2023 20:34:09 PAGE 7   
+
+ 364                  no:中文字的字库编号
+ 365                  font:字体 16:16*16
+ 366          返 回 值   :   无
+ 367          *************************************************/
+ 368          void OLED_ShowChinese(u8 x,u8 y,u8 no,u8 font)
+ 369          {
+ 370   1        u8 sizex,sizey;
+ 371   1        u8 i;
+ 372   1        if(font==16){sizex=16;sizey=16;}
+ 373   1        
+ 374   1        for(i=0;i<sizex*(sizey>>3);i++)
+ 375   1        {
+ 376   2          if(i%sizey==0) OLED_Set_Pos(x,y++);
+ 377   2          if(sizey==16) OLED_WR_Byte(Hzk[no][i],OLED_DATA);//16x16字号
+ 378   2          else return;
+ 379   2        }       
+ 380   1      }
+ 381          
+ 382          /************************************************
+ 383          函数名称  :   OLED_DrawBMP
+ 384          功    能  :   显示图片
+ 385          参    数  :   x,y显示坐标
+ 386                  sizex,sizey,图片长宽
+ 387                  BMP：要显示的图片
+ 388          返 回 值   :   无
+ 389          *************************************************/
+ 390          void OLED_DrawBMP(u8 x,u8 y,u8 sizex, u8 sizey,u8 BMP[])
+ 391          {   
+ 392   1        u16 j=0;
+ 393   1        u8 i,m;
+ 394   1        sizey=sizey/8+((sizey%8)?1:0);
+ 395   1        for(i=0;i<sizey;i++)
+ 396   1        {
+ 397   2          OLED_Set_Pos(x,i+y);
+ 398   2            for(m=0;m<sizex;m++)
+ 399   2          {      
+ 400   3            OLED_WR_Byte(BMP[j++],OLED_DATA);       
+ 401   3          }
+ 402   2        }
+ 403   1      } 
+ 404          
+ 405          
+ 406          
+ 407          
+ 408          
+ 409          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    981    ----
+   CONSTANT SIZE    =   2296    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      59
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

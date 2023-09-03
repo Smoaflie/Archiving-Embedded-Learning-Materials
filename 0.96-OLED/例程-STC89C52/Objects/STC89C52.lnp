@@ -1,0 +1,6 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\oled.obj",
+".\Objects\IIC.obj" 
+TO ".\Objects\STC89C52" 
+PRINT(".\Listings\STC89C52.m51") RAMSIZE(256) 
